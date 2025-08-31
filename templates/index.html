@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block body %}
+  <main class="max-w-7xl mx-auto px-4 py-4 grid-areas">
+    <section class="card p-4" style="grid-area:left;">
+      <h2 class="text-lg font-semibold mb-3">➕ 快速添加</h2>
+      <form id="add-form" class="space-y-3">
+        <div>
+          <label class="block mb-1 text-sm">英文单词 *</label>
+          <input id="add-word" class="field" placeholder="如: resilient" required>
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">中文释义 *</label>
+          <input id="add-translation" class="field" placeholder="可点击自动获取">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input id="add-phonetic" class="field" placeholder="音标">
+          <input id="add-audio" class="field" placeholder="读音音频URL">
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">例句（可选）</label>
+          <input id="add-example" class="field" placeholder="She is resilient ...">
+        </div>
+        <div>
+          <label class="block mb-1 text-sm">图片URL（可选）</label>
+          <input id="add-image" class="field" placeholder="https://...">
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" type="submit">保存到词库</button>
+          <button id="btn-enrich" class="btn" type="button">自动获取</button>
+        </div>
+      </form>
+      <p class="mt-2 text-xs text-gray-500">提示：复习时按 <span class="kbd">Space</span> 显示释义；用 <span class="kbd">0</span>~<span class="kbd">5</span> 评分。</p>
+    </section>
+
+    <section class="space-y-4" style="grid-area:main;">
+      <div class="card p-4" id="tab-review">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold">🕒 今日复习</h2>
+          <div><span class="text-sm text-gray-600">待复习 <b id="review-remaining">0</b></span></div>
+        </div>
+        <div id="review-empty" class="mt-4 text-gray-500">没有待复习的卡片。</div>
+        <div id="review-card" class="mt-4 hidden">
+          <div class="card p-6 border-dashed">
+            <div class="text-sm text-gray-500">下次复习：<span id="review-next"></span></div>
+            <div class="text-sm text-gray-500">已复习：<span id="review-reps"></span> 次，EF：<span id="review-ef"></span></div>
+            <div class="mt-4 text-4xl font-bold" id="review-word"></div>
+            <div class="mt-2 text-lg text-gray-700 hidden" id="review-translation"></div>
+            <div class="mt-2 text-gray-600 hidden" id="review-example"></div>
+            <div class="mt-2" id="review-media"></div>
+            <div class="mt-4 flex gap-2">
+              <button class="btn" id="btn-toggle-answer">显示释义（空格）</button>
+              <button class="btn" id="btn-skip">跳过</button>
+            </div>
+            <div id="grade-row" class="mt-4 hidden">
+              <div class="text-sm text-gray-500 mb-2">自我评分（0=不会，5=轻松）</div>
+              <div class="flex flex-wrap gap-2">
+                <button class="btn" data-q="0">0</button>
+                <button class="btn" data-q="1">1</button>
+                <button class="btn" data-q="2">2</button>
+                <button class="btn btn-primary" data-q="3">3</button>
+                <button class="btn btn-primary" data-q="4">4</button>
+                <button class="btn btn-primary" data-q="5">5</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4" id="tab-learn">
+        <div class="flex items中心 justify-between">
+          <h2 class="text-lg font-semibold">🌱 学习新单词</h2>
+          <div class="text-sm text-gray-600">今日可引入上限：<b id="learn-quota">0</b></div>
+        </div>
+        <div id="learn-empty" class="mt-4 text-gray-500">没有“新”状态的单词。</div>
+        <div id="learn-card" class="mt-4 hidden">
+          <div class="card p-6 border-dashed">
+            <div class="text-sm text-gray-500">新词：<span id="learn-index"></span>/<span id="learn-total"></span></div>
+            <div class="mt-4 text-4xl font-bold" id="learn-word"></div>
+            <div class="mt-2 text-lg text-gray-700 hidden" id="learn-translation"></div>
+            <div class="mt-2 text-gray-600 hidden" id="learn-example"></div>
+            <div class="mt-2" id="learn-media"></div>
+            <div class="mt-4 flex gap-2">
+              <button class="btn" id="btn-learn-toggle">显示释义</button>
+              <button class="btn" id="btn-learn-skip">跳过</button>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2 hidden" id="learn-actions">
+              <button class="btn btn-primary" id="btn-learn-introduce">加入复习（明天）</button>
+              <button class="btn" id="btn-learn-hard">标记困难（10 分钟后）</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card p-4" style="grid-area:right;">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">📚 词库</h2>
+        <select id="filter-status" class="field w-40">
+          <option value="all">全部状态</option>
+          <option value="new">新</option>
+          <option value="learning">学习中</option>
+          <option value="review">复习中</option>
+          <option value="overdue">逾期</option>
+        </select>
+      </div>
+      <div>
+        <input id="search-input" class="field" placeholder="搜索英文或中文...">
+      </div>
+      <div class="overflow-auto max-h-[65vh] mt-3">
+        <table class="w-full text-sm">
+          <thead class="sticky top-0 bg-white">
+            <tr class="text-left text-gray-500 border-b">
+              <th class="py-2 pr-2">单词</th>
+              <th class="py-2 pr-2">释义</th>
+              <th class="py-2 pr-2">下次复习</th>
+              <th class="py-2 pr-2">状态</th>
+              <th class="py-2 pr-2">操作</th>
+            </tr>
+          </thead>
+          
+          <tbody id="lib-body"></tbody>
+        </table>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/static/app.js" defer></script>
+{% endblock %}
